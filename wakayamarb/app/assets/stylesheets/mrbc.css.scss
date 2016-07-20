@@ -73,16 +73,12 @@ input {
         width: 280px;
         padding: .5rem;
         font-size: 1rem;
+        outline: 0;
         border-color: lighten($main_color, 10%);
         border-width: 3px;
         border-radius: 5px;
         background-color: transparent;
         color: $main_color;
-        &:hover,
-        &:active,
-        &:focus {
-            background-color: lighten($main_color, 75%);
-        }
     }
 }
 
@@ -97,13 +93,11 @@ input {
         font-size: 1rem;
         transition-duration: .1s;
 
-        border-color: lighten($main_color, 10%);
-        background-color: transparent;
-        color: $main_color;
+        border-color: transparent;
+        background-color: lighten($main_color, 10%);
+        color: $bgc;
         &:hover {
-            border-color: transparent;
-            background-color: lighten($main_color, 10%);
-            color: $bgc;
+            background-color: lighten($main_color, 30%);
         }
     }
 }

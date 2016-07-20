@@ -1,25 +1,17 @@
 <%= form_for(@compiler) do |f| %>
-  <% if @compiler.errors.any? %>
-    <div id="error_explanation">
-      <h2><%= pluralize(@compiler.errors.count, "error") %> prohibited this compiler from being saved:</h2>
-
-      <ul>
-      <% @compiler.errors.full_messages.each do |msg| %>
-        <li><%= msg %></li>
-      <% end %>
-      </ul>
+    <div class="field">
+        <p>Select ByteCode Format.</p>
     </div>
-  <% end %>
+
 
   <div class="field">
-    <%= f.label 'mruby source code' %>
+    <%= f.label 'select mruby source code.' %>
     <%= f.file_field :rb %>
   </div>
   <div class="field">
-    <%= f.label 'compiler options' %>
-    <%= f.text_field :options %>
+    <%= f.text_field :options, :placeholder => "options. ex -g" %>
   </div>
   <div class="actions">
-    <%= f.submit %>
+    <%= f.submit "Download" %>
   </div>
 <% end %>
