@@ -87,27 +87,6 @@
 
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.5/angular.min.js"></script>
-  <script>
-  var app = angular.module('app', []);
-  app.controller('tabCtrl', [
-    '$scope',
-    function($scope){
-      // initialize tab states
-      $scope.fileUploadActive = "active";
-      $scope.directInputActive = "";
-      $scope.fromURLActive = "";
-      $scope.active = "fileUpload";
-
-      // select to toggle tabs
-      $scope.select = function(selection){
-        $scope.fileUploadActive = "";
-        $scope.directInputActive = "";
-        $scope.fromURLActive = "";
-        $scope[selection + 'Active'] = "active";
-        $scope.active = selection;
-      };
-    }
-  ]);
-  </script>
+  <script src="assets/index.js"></script>
 </body>
 </html>
