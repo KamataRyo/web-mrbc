@@ -1,6 +1,13 @@
 endpoint = 'http://web-mrbc.wakayamarb.org'
 app = angular.module 'app', []
 
+app.config [
+    '$locationProvider'
+    ($locationProvider) ->
+        $locationProvider.html5Mode(true).hashPrefix '!'
+]
+
+
 app.directive 'fileReader', ->
     return {
         restrict: 'A'
@@ -34,9 +41,10 @@ app.directive 'fileReader', ->
 
 app.controller 'tabCtrl', [
     '$scope'
+    '$location'
     '$http'
     '$httpParamSerializer'
-    ($scope, $http, $httpParamSerializer) ->
+    ($scope, $location, $http, $httpParamSerializer) ->
         # initialize tab states
         $scope.fileUploadActive  = 'active'
         $scope.directInputActive = 'inactive'
@@ -50,8 +58,6 @@ app.controller 'tabCtrl', [
         ]
         $scope.bytecodeFormatVersion = $scope.bytecodeFormats[0].version;
 
-        # initialize async state
-
         # select to toggle tabs
         $scope.select = (selection) ->
             $scope.log = undefined
@@ -60,6 +66,12 @@ app.controller 'tabCtrl', [
             $scope.fromURLActive     = 'inactive'
             $scope[selection + 'Active'] = 'active'
             $scope.active = selection
+            $location.hash selection
+
+        # client side routing
+        hash = $location.hash()
+        if hash isnt '' then $scope.select hash
+
 
         # make request and download binary
         $scope.download = ->
