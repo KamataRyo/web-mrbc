@@ -13,36 +13,40 @@
   <link rel="stylesheet" href="assets/style.css">
   <link href='https://fonts.googleapis.com/css?family=Raleway' rel='stylesheet' type='text/css'>
 </head>
-<body>
-  <div class="container">
-
+<body class="container">
     <h1>mrbc Web Compiler</h1>
 
     <form>
 
-      <ul class="tabs">
-        <li><a class="active" href="#fileUpload">File Upload</a></li>
-        <li><a href="#directInput">Direct Input</a></li>
-        <li><a href="#fromURL">From URL</a></li>
+      <ul class="tab-heads">
+        <li class="tab-head active">
+          <a class="tab-handle" href="#fileUpload">File Upload</a>
+        </li>
+        <li class="tab-head">
+          <a class="tab-handle" href="#directInput">Direct Input</a>
+        </li>
+        <li class="tab-head">
+          <a class="tab-handle" href="#fromURL">From URL</a>
+        </li>
       </ul>
 
-      <ul class="tabs-content">
-        <li class="active" id="fileUpload">
-          <label for="file">Drop file</label>
-          <p class="dropArea">Drop a *.rb file here.</p>
+      <ul class="tab-contents">
+        <li class="tab-content active" id="fileUpload">
+          <label for="file">Drop File</label>
+          <div class="drop-area">Drop a *.rb file here.</div>
           <input type="file" id="file">
         </li>
-        <li id="directInput">
-          <label for="source">Input source</label>
+        <li class="tab-content" id="directInput">
+          <label for="source">Input Source</label>
           <textarea class="u-full-width" placeholder="print 'Hello World!'" id="source"></textarea>
         </li>
-        <li id="fromURL">
+        <li class="tab-content" id="fromURL">
            <label for="url">URL</label>
            <input class="u-full-width" type="url" placeholder="http://example.com/hello.rb" id="url">
         </li>
       </ul>
 
-      <label for="bytecode">bytecode format</label>
+      <label for="bytecode">Bytecode Format</label>
       <select class="u-full-width" id="bytecode">
         <option value="3" select="selected">ver.0003</option>
         <option value="2">ver.0002</option>
@@ -51,12 +55,10 @@
       <label for="options">compiler options</label>
       <input class="u-full-width" type="text" placeholder="-g" id="options">
 
-      <input class="button-primary" type="submit" value="Download">
+      <input class="button download button-primary" type="submit" value="Download">
 
     </form>
 
-
-    </div><!--.container-->
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.5/angular.min.js"></script>
   <script>
