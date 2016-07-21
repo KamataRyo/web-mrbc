@@ -10,6 +10,7 @@ body
 
 .title{
     margin: .75em auto;
+    text-align: center;
 }
 
 .tab-heads, .tab-contents
@@ -62,13 +63,6 @@ a,.tab-handle:hover
     display: none;
 }
 
-.drop-area
-{
-    height: 150px;
-    border: 1px dotted #D1D1D1;
-    border-radius: 4px;
-    color: #D1D1D1;
-}
 .drop-area:hover
 {
     cursor: default;
@@ -83,4 +77,37 @@ textarea#source
 .button.download
 {
     float: right;
+}
+
+.footer
+{
+    border-top: 1px solid #D1D1D1;
+}
+
+.footer-text
+{
+    text-align: center;
+    margin: 0;
+}
+
+.SNS-links
+{
+    list-style:none;
+    text-align: center;
+}
+
+.SNS-link
+{
+    display: inline;
+    margin: 0 .25em;
+}
+
+.SNS-link a
+{
+    color: #555;
+}
+
+.SNS-link a:hover
+{
+    opacity: .7;
 }
