@@ -6,7 +6,10 @@ body {
   max-width: 600px; }
 
 .title {
-  margin: .75em auto;
+  margin: .75em auto .25em;
+  text-align: center; }
+
+.description {
   text-align: center; }
 
 .tab-heads, .tab-contents {
@@ -39,6 +42,11 @@ body {
   .tab-handle:hover {
     cursor: pointer; }
 
+pre {
+  padding: 1em;
+  background-color: #ebebeb;
+  border-radius: 4px; }
+
 a {
   cursor: pointer; }
 
@@ -47,6 +55,12 @@ a {
 
 .tab-content:not(.active) {
   display: none; }
+
+#file {
+  display: none; }
+
+.filename_label {
+  margin-left: .5em; }
 
 textarea#source {
   height: 150px;

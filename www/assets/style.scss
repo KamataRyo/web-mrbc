@@ -14,7 +14,11 @@ body
 }
 
 .title{
-    margin: .75em auto;
+    margin: .75em auto .25em;
+    text-align: center;
+}
+.description
+{
     text-align: center;
 }
 
@@ -61,6 +65,13 @@ body
     }
 }
 
+pre
+{
+    padding: 1em;
+    background-color: lighten($border_color, 10%);
+    border-radius: 4px;
+}
+
 a
 {
     cursor: pointer;
@@ -76,6 +87,15 @@ a
     display: none;
 }
 
+#file
+{
+    display:none;
+}
+
+.filename_label
+{
+    margin-left: .5em;
+}
 
 textarea#source
 {
