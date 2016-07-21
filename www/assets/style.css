@@ -4,6 +4,13 @@ body
     font-color: #222;
 }
 
+.container {
+    max-width: 600px;
+}
+
+.title{
+    margin: .75em auto;
+}
 
 .tab-heads, .tab-contents
 {
@@ -40,6 +47,11 @@ body
     text-decoration: none;
     color: #222;
 }
+a,.tab-handle:hover
+{
+    cursor: pointer;
+}
+
 
 .tab-content:not(.active)
 {
@@ -51,6 +63,17 @@ body
     height: 150px;
     border: 1px dotted #D1D1D1;
     border-radius: 4px;
+    color: #D1D1D1;
+}
+.drop-area:hover
+{
+    cursor: default;
+}
+
+textarea#source
+{
+    height: 150px;
+    resize: vertical;
 }
 
 .button.download
