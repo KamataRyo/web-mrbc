@@ -1,11 +1,11 @@
 {
-  "name": "web-mrbc-client",
+  "name": "web-mrbc-server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.html",
+  "main": "index.js",
   "scripts": {
-    "install": "bower install",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "install": "bin/install.sh",
+    "test": ""
   },
   "author": "",
   "license": "ISC",
