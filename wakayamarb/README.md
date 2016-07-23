@@ -18,5 +18,12 @@ $ bundle exec rake db:migrate
 $ git clone --depth=1 https://github.com/mruby/mruby.git
 $ cd mruby
 $ make
-$ echo "export PATH=\"$HOME/mruby/bin:$PATH\"" >> "$HOME/.bashrc"
+$ cd ..
+$ ./mruby/bin/mrbc -h
+
+# mrbc with bytecode format Ver.002
+$ git clone --depth=1 git@bitbucket.org:tarosay/mrbc.git
+$ cd mrbc
+$ make
+$ ./mrbc/mrbc -h
 ```
