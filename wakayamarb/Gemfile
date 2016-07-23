@@ -40,3 +40,5 @@ gem 'spring',        group: :development
 
 gem 'carrierwave'
 
+# use drag and drop library
+gem 'dropzonejs-rails'

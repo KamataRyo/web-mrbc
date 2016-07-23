@@ -1,0 +1,89 @@
+body {
+  font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-color: #222; }
+
+.container {
+  max-width: 600px; }
+
+.title {
+  margin: .75em auto .25em;
+  text-align: center; }
+
+.description {
+  text-align: center; }
+
+.tab-heads, .tab-contents {
+  list-style: none; }
+
+.tab-heads {
+  display: table;
+  table-layout: fixed;
+  width: 100%;
+  text-align: center; }
+
+.tab-head {
+  display: table-cell;
+  line-height: 2.5;
+  margin: 0;
+  border-width: 0 0 1px 0;
+  border-style: solid;
+  border-color: #D1D1D1; }
+  .tab-head.active {
+    border-width: 1px 1px 0;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px; }
+  .tab-head a:hover {
+    color: #222;
+    opacity: .7; }
+
+.tab-handle {
+  text-decoration: none;
+  color: #222; }
+  .tab-handle:hover {
+    cursor: pointer; }
+
+pre {
+  padding: 1em;
+  background-color: #ebebeb;
+  border-radius: 4px; }
+
+a {
+  cursor: pointer; }
+
+.tab-contents {
+  margin: 0; }
+
+.tab-content:not(.active) {
+  display: none; }
+
+#file {
+  display: none; }
+
+.filename_label {
+  margin-left: .5em; }
+
+textarea#source {
+  height: 150px;
+  resize: vertical; }
+
+.button.download {
+  float: right; }
+
+.footer {
+  border-top: 1px solid #D1D1D1; }
+
+.footer-text {
+  text-align: center;
+  margin: 0; }
+
+.SNS-links {
+  list-style: none;
+  text-align: center; }
+
+.SNS-link {
+  display: inline;
+  margin: 0 .25em; }
+  .SNS-link a {
+    color: #555; }
+    .SNS-link a:hover {
+      opacity: .7; }
