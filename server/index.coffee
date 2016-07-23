@@ -1,43 +1,104 @@
-PORT = require('./package.json').config.port
-tmp = require 'tmp'
-fs = require 'fs'
-app = require('express')()
+PORT    = require('./package.json').config.port
+tmp     = require 'tmp'
+fs      = require 'fs'
+request = require 'request'
+app     = require('express')()
+exec 　　= require('child_process').exec
 
-
-sanitize = (option)->
-    'aaaa'
 
 app.get '/', (req, res) ->
+    cleanup    = null # set cleanupCallback if needed
+    source     = '' # set source code to compile
+    sourcePath = '' # set where to write source
+    buildCommand = (mrbcVer, options, path) ->
+        # create command
+        if req.query.version is '2'
+            "#{__dirname}/mrbc/mrbc #{options} #{path}"
+        else # if req.query.version is '3'
+            "#{__dirname}/mruby/bin/mrbc #{options} #{path}"
+    # TODO: check mrbc specifocation
+    outputPath = ->
+        sourcePath + '.mrb'
 
-    # Case with source
-    if req.query.type is 'source'
-        # create tempfile
-        tmp.file (err, path, fd, cleanupCallback) ->
-            if err then throw err
 
-            # write source to tempfile
-            fs.writeFile path, req.content, (err) ->
+    # start Promise
+    new Promise (fulfilled, rejected) ->
 
-                # get options
-                options = sanitize req.options ## accept -g and -B
+            # if url given, request the content at first
+                new Promise (fulfilled, rejected) ->
 
-                console.log req.query
-                # create command
-                if req.query.version is '2'
-                    mrbc = "#{__dirname}/mrbc/mrbc #{options} #{path}"
+                    if req.query.type is 'url'
+                        url = req.query.content
+                        request url, (err, res, body) ->
+                            if err
+                                rejected 500, 'Internal Server Error'
+                            else if res.statusCode isnt 200
+                                rejected 404, 'Requested Resource not found'
+                            else
+                                source = body
+                                resolve()
+
+                    else if req.query.type is 'source'
+                        source = req.query.content
+                        fulfilled()
+
+                    else
+                        rejected 400, 'Bad Request, unknown resource type'
+
+        .then ->
+            # ctreate a temporary file
+            new Promise tmp.file (err, path, fd, cleanupCallback) ->
+                cleanup = cleanupCallback
+                if err
+                    rejected 500, 'Internal Server Error'
                 else
-                    mrbc = "#{__dirname}/mruby/bin/mrbc #{options} #{path}"
+                    sourcePath = path
+                    fulfilled()
 
+        .then ->
+            # write content to the temporary file
+            new Promise (fulfilled, rejected) ->
+                fs.writeFile sourcePath, content, (err) ->
+                    if err
+                        rejected 500, 'Internal Server Error'
+                    else
+                        fulfilled()
 
-                res.charset 'UTF-8'
-                res.contentType 'application/octet-stream'
-                res.send mrbc
+        .then ->
+            # build command
+            command = buildCommand req.query.version, req.query.options, sourcePath
 
-                # cleanup tempfile
-                cleanupCallback()
+            # exec command
+            new Promise (fulfilled, rejected) ->
+                exec command, (err, stdout, stderr) ->
+                    if err
+                        rejected 500, 'Internal Server Error'
+                    else if stderr
+                        # maybe compile failed
+                        rejected 400, 'Bad Request, Compile Error'
+                    else
+                        # maybe compile success
+                        fulfilled()
 
-    else
-        res.send 'unkown'
+        .then ->
+            # send the binary
+            exec "cat #{outputPath()}", (err, stdout, stderr) ->
+                if error or stderr
+                    rejected 500, 'Internal Server Error'
+                else
+                    res.charset 'UTF-8'
+                    res.contentType 'application/octet-stream'
+                    res.send stdout
+                    fulfilled()
+                # after all
+                cleanup()
+        .catch (statusCode, title, message) ->
+            res.charset 'UTF-8'
+            res.contentType 'plain/text'
+            res.send "#{title}: #{message}"
+            # after all
+            cleanup()
+
 
 
 app.listen PORT, ->
@@ -88,3 +149,4 @@ app.listen PORT, ->
     @compiler.destroy
     deleteall( fullpath )
   end
+###
