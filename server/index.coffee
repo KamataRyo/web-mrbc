@@ -7,7 +7,8 @@ exec 　　= require('child_process').exec
 
 
 app.get '/', (req, res) ->
-    cleanup    = null # set cleanupCallback if needed
+
+    cleanup    = -> # set cleanupCallback if needed or, empty function to do nothing
     source     = '' # set source code to compile
     sourcePath = '' # set where to write source
     buildCommand = (mrbcVer, options, path) ->
@@ -20,84 +21,81 @@ app.get '/', (req, res) ->
     outputPath = ->
         sourcePath + '.mrb'
 
-
     # start Promise
     new Promise (fulfilled, rejected) ->
+        # if url given, request the content at first
+        if req.query.type is 'url'
+            url = req.query.content
+            request url, (err, res, body) ->
+                if err
+                    rejected [500, 'Internal Server Error']
+                else if res.statusCode isnt 200
+                    rejected [404, 'Resource not found']
+                else
+                    source = body
+                    fulfilled()
 
-            # if url given, request the content at first
-                new Promise (fulfilled, rejected) ->
+        else if req.query.type is 'source'
+            source = req.query.content
+            fulfilled()
 
-                    if req.query.type is 'url'
-                        url = req.query.content
-                        request url, (err, res, body) ->
-                            if err
-                                rejected 500, 'Internal Server Error'
-                            else if res.statusCode isnt 200
-                                rejected 404, 'Requested Resource not found'
-                            else
-                                source = body
-                                resolve()
+        else
+            rejected [400, 'Bad Request', 'Unknown resource type queried.']
 
-                    else if req.query.type is 'source'
-                        source = req.query.content
-                        fulfilled()
-
-                    else
-                        rejected 400, 'Bad Request, unknown resource type'
-
-        .then ->
-            # ctreate a temporary file
-            new Promise tmp.file (err, path, fd, cleanupCallback) ->
+    .then ->
+        # ctreate a temporary file
+        new Promise (fulfilled, rejected) ->
+            tmp.file (err, path, fd, cleanupCallback) ->
                 cleanup = cleanupCallback
                 if err
-                    rejected 500, 'Internal Server Error'
+                    rejected [500, 'Internal Server Error']
                 else
                     sourcePath = path
                     fulfilled()
 
-        .then ->
-            # write content to the temporary file
-            new Promise (fulfilled, rejected) ->
-                fs.writeFile sourcePath, content, (err) ->
-                    if err
-                        rejected 500, 'Internal Server Error'
-                    else
-                        fulfilled()
-
-        .then ->
-            # build command
-            command = buildCommand req.query.version, req.query.options, sourcePath
-
-            # exec command
-            new Promise (fulfilled, rejected) ->
-                exec command, (err, stdout, stderr) ->
-                    if err
-                        rejected 500, 'Internal Server Error'
-                    else if stderr
-                        # maybe compile failed
-                        rejected 400, 'Bad Request, Compile Error'
-                    else
-                        # maybe compile success
-                        fulfilled()
-
-        .then ->
-            # send the binary
-            exec "cat #{outputPath()}", (err, stdout, stderr) ->
-                if error or stderr
-                    rejected 500, 'Internal Server Error'
+    .then ->
+        console.log 'aa'
+        # write content to the temporary file
+        new Promise (fulfilled, rejected) ->
+            fs.writeFile sourcePath, content, (err) ->
+                if err
+                    rejected [500, 'Internal Server Error']
                 else
-                    res.charset 'UTF-8'
-                    res.contentType 'application/octet-stream'
-                    res.send stdout
                     fulfilled()
-                # after all
-                cleanup()
-        .catch (statusCode, title, message) ->
-            res.charset 'UTF-8'
-            res.contentType 'plain/text'
-            res.send "#{title}: #{message}"
+
+    .then ->
+        # build command
+        command = buildCommand req.query.version, req.query.options, sourcePath
+
+        # exec command
+        new Promise (fulfilled, rejected) ->
+            exec command, (err, stdout, stderr) ->
+                if err
+                    rejected [500, 'Internal Server Error']
+                else if stderr
+                    # maybe compile failed
+                    rejected [400, 'Bad Request', 'Compile error occured.']
+                else
+                    # maybe compile success
+                    fulfilled()
+
+    .then ->
+        # send the binary
+        exec "cat #{outputPath()}", (err, stdout, stderr) ->
+            if error or stderr
+                rejected [500, 'Internal Server Error']
+            else
+                res.header 'Content-Type', 'application/octet-stream; charset=utf-8'
+                res.send stdout
+                fulfilled()
             # after all
             cleanup()
+
+    .catch ([statusCode, statusText, message]) ->
+        res.header 'Content-Type', 'application/json; charset=utf-8'
+        res.json {statusCode, statusText, message}
+        # after all
+        cleanup()
 
 
 
