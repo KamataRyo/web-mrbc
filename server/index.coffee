@@ -7,8 +7,8 @@ exec 　　= require('child_process').exec
 
 # path to compiler
 mrbc =
-    2: "#{__dirname}/mrbc/mrbc"
-    3: "#{__dirname}/mruby/bin/mrbc"
+    2: "cd #{__dirname}/mrbc && ./mrbc"
+    3: "cd #{__dirname}/mruby/bin && ./mrbc"
 
 # API uniformed header
 jsonHeader =
@@ -109,29 +109,25 @@ webCompile = (req, res) ->
         cleanup()
         fs.unlink sourcePath
 
-# get mruby version
-getVersion = (req, res) ->
-    # specify bytecode format
-    if req.query.format is 2
-        format = 2
-    else
-        format = 3
-    # do command
-    exec "#{mrbc[format]} -v", (err, stdout, stderr) ->
-        if err and stderr
-            stdout = stdout.split("\n")[0]
+
+informCommand = (option) ->
+    (req, res) ->
+        # specify bytecode format
+        if req.query.format is 2
+            format = 2
+        else
+            format = 3
+        # do command
+        exec "#{mrbc[format]} -#{option}", (err, stdout, stderr) ->
             res.set(jsonHeader).status(200).json {
                 success: true
-                information: stdout
-            }
-        else
-            res.set(jsonHeader).status(500).json {
-                success: false
-                message: 'Internal Server Error'
+                lines: stdout.split('\n').filter (e) -> e isnt ''
             }
 
+
 app.get '/', webCompile
-app.get '/version/', getVersion
+app.get '/help/', informCommand 'h'
+app.get '/version/', informCommand 'v'
 
 app.listen PORT, ->
     console.log "Server is listening on port #{PORT}."
