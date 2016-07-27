@@ -6,20 +6,19 @@ app     = require('express')()
 exec 　　= require('child_process').exec
 
 
-app.get '/', (req, res) ->
-
+webCompile = (req, res) ->
     cleanup    = -> # set cleanupCallback if needed or, empty function to do nothing
     source     = '' # set source code to compile
     sourcePath = '' # set where to write source
     buildCommand = (mrbcVer, options, path) ->
+        unless options then options = ''
+        unless req.params.output then req.params.output = 'noname.mrb'
+        options += " -o #{req.params.output}"
         # create command
         if req.query.version is '2'
             "#{__dirname}/mrbc/mrbc #{options} #{path}"
         else # if req.query.version is '3'
             "#{__dirname}/mruby/bin/mrbc #{options} #{path}"
-    # TODO: check mrbc specifocation
-    outputPath = ->
-        sourcePath + '.mrb'
 
     # start Promise
     new Promise (fulfilled, rejected) ->
@@ -45,29 +44,26 @@ app.get '/', (req, res) ->
     .then ->
         # ctreate a temporary file
         new Promise (fulfilled, rejected) ->
-            tmp.file (err, path, fd, cleanupCallback) ->
+            tmp.dir (err, path, cleanupCallback) ->
                 cleanup = cleanupCallback
                 if err
                     rejected [500, 'Internal Server Error']
                 else
-                    sourcePath = path
+                    sourcePath = path + '/source.rb'
                     fulfilled()
 
     .then ->
-        console.log 'aa'
         # write content to the temporary file
         new Promise (fulfilled, rejected) ->
-            fs.writeFile sourcePath, content, (err) ->
+            fs.writeFile sourcePath, source, (err) ->
                 if err
                     rejected [500, 'Internal Server Error']
                 else
                     fulfilled()
 
     .then ->
-        # build command
         command = buildCommand req.query.version, req.query.options, sourcePath
-
-        # exec command
+        # exec
         new Promise (fulfilled, rejected) ->
             exec command, (err, stdout, stderr) ->
                 if err
@@ -80,24 +76,32 @@ app.get '/', (req, res) ->
                     fulfilled()
 
     .then ->
-        # send the binary
-        exec "cat #{outputPath()}", (err, stdout, stderr) ->
-            if error or stderr
-                rejected [500, 'Internal Server Error']
-            else
-                res.header 'Content-Type', 'application/octet-stream; charset=utf-8'
-                res.send stdout
-                fulfilled()
-            # after all
+        new Promise (fulfilled, rejected) ->
+            # send the binary
+            exec "cat #{req.params.output}", (err, stdout, stderr) ->
+                if err or stderr
+                    console.log stderr
+                    rejected [500, 'Internal Server Error']
+                else
+                    res.header 'Content-Type', 'application/octet-stream; charset=utf-8'
+                    res.send stdout
+                    fulfilled()
+    .then ->
+        new Promise (fulfilled, rejected) ->
             cleanup()
+            fs.unlink sourcePath, fulfilled
 
-    .catch ([statusCode, statusText, message]) ->
+    .catch (a) ->
+        console.log a
+        [statusCode, statusText, message] = a
         res.header 'Content-Type', 'application/json; charset=utf-8'
         res.json {statusCode, statusText, message}
         # after all
         cleanup()
+        fs.unlink sourcePath
 
 
+app.get '/', webCompile
 
 app.listen PORT, ->
     console.log "Server is listening on port #{PORT}."
