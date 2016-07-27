@@ -110,6 +110,52 @@ webCompile = (req, res) ->
         fs.unlink sourcePath
 
 
+sendDocument = (req, res) ->
+    res.set(jsonHeader).status(200).json [
+        {
+            endpoint: '/'
+            description: 'return this document.'
+            queries: {}
+        },
+        {
+            endpoint: '/compile/'
+            description: 'compile ruby code.'
+            queries:
+                format: 'set ByteCode Format version.'
+                type: "'source' or 'url'"
+                content: "resource described as 'type'."
+                name: 'name of output. if set, the compiled file will be downloaded.'
+        },
+        {
+            endpoint: '/check/'
+            description: 'check syntax.'
+            queries:
+                format: 'set ByteCode Format version.'
+                type: "'source' or 'url'"
+                content: "resource described as 'type'."
+        },
+        {
+            endpoint: '/help/'
+            description: 'mrbc -h'
+            queries:
+                format: 'set ByteCode Format version.'
+        },
+        {
+            endpoint: '/version/'
+            description: 'display version information.'
+            queries:
+                format: 'set ByteCode Format version.'
+        },
+        {
+            endpoint: '/copyright/'
+            description: 'display copyright information.'
+            queries:
+                format: 'set ByteCode Format version.'
+        }
+    ]
+
+syntaxCheck = (req, res) -> res.send 'test'
+
 informCommand = (option) ->
     (req, res) ->
         # specify bytecode format
@@ -118,16 +164,21 @@ informCommand = (option) ->
         else
             format = 3
         # do command
-        exec "#{mrbc[format]} -#{option}", (err, stdout, stderr) ->
+        exec "#{mrbc[format]} #{option}", (err, stdout, stderr) ->
             res.set(jsonHeader).status(200).json {
                 success: true
                 lines: stdout.split('\n').filter (e) -> e isnt ''
             }
 
 
-app.get '/', webCompile
-app.get '/help/', informCommand 'h'
-app.get '/version/', informCommand 'v'
+app
+    .get '/', sendDocument
+    .get '/compile/', webCompile
+    .get '/check/', syntaxCheck
+    .get '/help/', informCommand '-h'
+    .get '/version/', informCommand '--version'
+    .get '/copyright/', informCommand '--copyright'
+
 
 app.listen PORT, ->
     console.log "Server is listening on port #{PORT}."
