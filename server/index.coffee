@@ -5,6 +5,15 @@ request = require 'request'
 app     = require('express')()
 exec 　　= require('child_process').exec
 
+# path to compiler
+mrbc =
+    2: "#{__dirname}/mrbc/mrbc"
+    3: "#{__dirname}/mruby/bin/mrbc"
+
+# API uniformed header
+jsonHeader =
+    'Content-Type' : 'application/json; charset=UTF-8'
+
 
 webCompile = (req, res) ->
     cleanup    = -> # set cleanupCallback if needed or, empty function to do nothing
@@ -16,9 +25,9 @@ webCompile = (req, res) ->
         options += " -o #{req.params.output}"
         # create command
         if req.query.version is '2'
-            "#{__dirname}/mrbc/mrbc #{options} #{path}"
+            "#{mrbc[2]} #{options} #{path}"
         else # if req.query.version is '3'
-            "#{__dirname}/mruby/bin/mrbc #{options} #{path}"
+            "#{mrbc[3]} #{options} #{path}"
 
     # start Promise
     new Promise (fulfilled, rejected) ->
@@ -100,8 +109,29 @@ webCompile = (req, res) ->
         cleanup()
         fs.unlink sourcePath
 
+# get mruby version
+getVersion = (req, res) ->
+    # specify bytecode format
+    if req.query.format is 2
+        format = 2
+    else
+        format = 3
+    # do command
+    exec "#{mrbc[format]} -v", (err, stdout, stderr) ->
+        if err and stderr
+            stdout = stdout.split("\n")[0]
+            res.set(jsonHeader).status(200).json {
+                success: true
+                information: stdout
+            }
+        else
+            res.set(jsonHeader).status(500).json {
+                success: false
+                message: 'Internal Server Error'
+            }
 
 app.get '/', webCompile
+app.get '/version/', getVersion
 
 app.listen PORT, ->
     console.log "Server is listening on port #{PORT}."
