@@ -5,110 +5,138 @@ request = require 'request'
 app     = require('express')()
 exec 　　= require('child_process').exec
 
-# path to compiler
+
+# supportive constants and helper functions
+## path to compiler
 mrbc =
     2: "cd #{__dirname}/mrbc && ./mrbc"
     3: "cd #{__dirname}/mruby/bin && ./mrbc"
-
-# API uniformed header
+## API uniformed header
 jsonHeader =
-    'Content-Type' : 'application/json; charset=UTF-8'
+    'Content-Type' : 'application/json; charset=utf-8'
+## For binary download
+makeDownloadHeader = (filename, filesize) -> {
+    'Content-Type' : 'application/octet-stream; charset=utf-8'
+    'Content-Length': filesize
+    'Content-Disposition': "attachment; filename=\"#{filename}\""
+}
+
+class httpError extends Error
+    setStatus: (code, text) ->
+        @statusCode = code
+        @statusText = text
+        return this
 
 
-webCompile = (req, res) ->
-    cleanup    = -> # set cleanupCallback if needed or, empty function to do nothing
-    source     = '' # set source code to compile
-    sourcePath = '' # set where to write source
-    buildCommand = (mrbcVer, options, path) ->
-        unless options then options = ''
-        unless req.params.output then req.params.output = 'noname.mrb'
-        options += " -o #{req.params.output}"
-        # create command
-        if req.query.version is '2'
-            "#{mrbc[2]} #{options} #{path}"
-        else # if req.query.version is '3'
-            "#{mrbc[3]} #{options} #{path}"
-
-    # start Promise
-    new Promise (fulfilled, rejected) ->
-        # if url given, request the content at first
-        if req.query.type is 'url'
-            url = req.query.content
+# Tasks
+## Abstract resource. if url given, request the content at first
+getResource = (req) ->
+    unless req.query.output then req.query.output = 'noname.mrb'
+    if req.query.type is 'url'
+        url = req.query.content
+        new Promise (fulfilled, rejected) ->
             request url, (err, res, body) ->
                 if err
-                    rejected [500, 'Internal Server Error']
+                    rejected new httpError().setStatus(500, 'Internal Server Error')
                 else if res.statusCode isnt 200
-                    rejected [404, 'Resource not found']
+                    rejected new httpError().setStatus(404, 'Resource not found')
                 else
-                    source = body
-                    fulfilled()
+                    fulfilled {content: body, output: req.query.output}
 
-        else if req.query.type is 'source'
-            source = req.query.content
-            fulfilled()
+    else if req.query.type is 'source'
+        {content:req.query.content, output: req.query.output}
 
-        else
-            rejected [400, 'Bad Request', 'Unknown resource type queried.']
+    else
+        throw new httpError 'Unknown resource type queried.'
+            .setStatus 400, 'Bad Request'
 
-    .then ->
-        # ctreate a temporary file
+## ctreate a temporary directory
+createTempDirectory = ->
+    new Promise (fulfilled, rejected) ->
+        tmp.dir (err, path, cleanupCallback) ->
+            if err
+                rejected new httpError().setStatus(500, 'Internal Server Error')
+            else
+                fulfilled {path: path, cleanupCallback}
+
+## write content to the temporary file
+writeTempFile = ([resource, tempdir]) ->
+    new Promise (fulfilled, rejected) ->
+        fileIO =
+            input: "#{tempdir.path}/#{resource.output}.rb"
+            output: "#{tempdir.path}/#{resource.output}"
+            outputBase: resource.output
+            cleanup: tempdir.cleanup
+        fs.writeFile fileIO.input, resource.content, (err) ->
+            if err
+                tempdir.cleanup()
+                rejected new httpError().setStatus(500, 'Internal Server Error')
+            else
+                fulfilled fileIO
+
+## exec compile
+execCompile = (req, options) ->
+    (fileIO) ->
         new Promise (fulfilled, rejected) ->
-            tmp.dir (err, path, cleanupCallback) ->
-                cleanup = cleanupCallback
-                if err
-                    rejected [500, 'Internal Server Error']
-                else
-                    sourcePath = path + '/source.rb'
-                    fulfilled()
 
-    .then ->
-        # write content to the temporary file
-        new Promise (fulfilled, rejected) ->
-            fs.writeFile sourcePath, source, (err) ->
-                if err
-                    rejected [500, 'Internal Server Error']
-                else
-                    fulfilled()
+            # specify bytecode format requested
+            mrbc = if req.query.format is '2' then mrbc[2] else mrbc = mrbc[3]
 
-    .then ->
-        command = buildCommand req.query.version, req.query.options, sourcePath
-        # exec
-        new Promise (fulfilled, rejected) ->
+            # redundant options arguments
+            if Array.isArray options then options = options.join ''
+
+            command = "#{mrbc} #{options} -o #{fileIO.output} #{fileIO.input}"
             exec command, (err, stdout, stderr) ->
                 if err
-                    rejected [500, 'Internal Server Error']
+                    fileIO.cleanup()
+                    rejected new httpError(),setStatus(500, 'Internal Server Error')
                 else if stderr
                     # maybe compile failed
-                    rejected [400, 'Bad Request', 'Compile error occured.']
-                else
+                    fileIO.cleanup()
+                    rejected new httpError('Compile error occured.'),setStatus(400, 'Bad Request')
                     # maybe compile success
-                    fulfilled()
+                    fulfilled {fileIO, stdout}
 
-    .then ->
-        new Promise (fulfilled, rejected) ->
-            # send the binary
-            exec "cat #{req.params.output}", (err, stdout, stderr) ->
+## do res.send
+makeRespose = (req, res) ->
+    ({fileIO, stdout}) ->
+        if req.query.download is 1 # TODO: check the type of Express response 1 or '1'
+            # response as download file
+            exec "cat #{fileIO.output.output}", (err, stdout, stderr) ->
                 if err or stderr
-                    console.log stderr
-                    rejected [500, 'Internal Server Error']
+                    rejected new httpError().setStatus(500, 'Internal Server Error').setCallback
                 else
-                    res.header 'Content-Type', 'application/octet-stream; charset=utf-8'
-                    res.send stdout
-                    fulfilled()
-    .then ->
-        new Promise (fulfilled, rejected) ->
-            cleanup()
-            fs.unlink sourcePath, fulfilled
+                    res
+                        .set makeDownloadHeader(fileIO.outputBase)
+                        .send stdout
+        else
+            # response as buffer
+            res
+                .set jsonJeader
+                .json {
+                    stdout
+                }
 
-    .catch (a) ->
-        console.log a
-        [statusCode, statusText, message] = a
-        res.header 'Content-Type', 'application/json; charset=utf-8'
-        res.json {statusCode, statusText, message}
-        # after all
-        cleanup()
-        fs.unlink sourcePath
 
+## do res.send in case erro occured
+makeErrorResponse = (err) ->
+    res.header 'Content-Type', 'application/json; charset=utf-8'
+    res.json {
+        statusCode: err.statusCode
+        statusText: err.statusText
+        message: err.message
+    }
+    # after all
+    if err.callback then callback()
+
+
+# each method for route
+webCompile = (req, res) ->
+    Promise.all [getResource(req), createTempDirectory]
+        .then writeTempFile
+        .then execCompile(req)
+        .then makeResponse(req, res)
+        .catch makeErrorResponse
 
 sendDocument = (req, res) ->
     res.set(jsonHeader).status(200).json [
@@ -171,6 +199,7 @@ informCommand = (option) ->
             }
 
 
+# routing
 app
     .get '/', sendDocument
     .get '/compile/', webCompile
@@ -179,7 +208,7 @@ app
     .get '/version/', informCommand '--version'
     .get '/copyright/', informCommand '--copyright'
 
-
+# start sever
 app.listen PORT, ->
     console.log "Server is listening on port #{PORT}."
 
