@@ -4,15 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "install": "bin/install.sh"
+    "install": "bin/install.sh",
+    "compile": "babel --presets es2015 -d lib/ src/",
+    "prepublish": "npm run compile",
+    "lint": "./node_modules/.bin/eslint -c './.eslintrc.json' ./",
+    "test": "npm run compile && mocha --compilers js:babel-core/register"
   },
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "gulp": "^3.9.1",
-    "gulp-coffee": "^2.3.2",
-    "gulp-plumber": "^1.1.0"
-  },
+  "author": "KamataRyo",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.14.0",
     "request": "^2.74.0",
@@ -20,5 +19,10 @@
   },
   "config": {
     "port": 21234
+  },
+  "devDependencies": {
+    "babel-cli": "^6.11.4",
+    "babel-preset-es2015": "^6.9.0",
+    "eslint": "^3.2.0"
   }
 }
