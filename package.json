@@ -7,8 +7,9 @@
     "mrbc-compile": "bin/mrbc-compile.sh",
     "transpile": "babel --presets es2015 -d lib/ src/",
     "prepublish": "npm run transpile",
-    "lint": "./node_modules/.bin/eslint -c './.eslintrc.json' ./",
-    "test": "./node_modules/.bin/mocha --compilers js:espower-babel/guess spec/**/*.js",
+    "lint": "$(npm bin)/eslint -c './.eslintrc.json' ./",
+    "test": "$(npm bin)/mocha --compilers js:espower-babel/guess test/**/*.js",
+    "cover": "$(npm bin)/babel-node $(npm bin)/isparta cover --report text $(npm bin)/_mocha",
     "watch": "gulp watch"
   },
   "author": "KamataRyo",
@@ -32,6 +33,7 @@
     "gulp-concat": "^2.6.0",
     "gulp-plumber": "^1.1.0",
     "gulp-sourcemaps": "^1.6.0",
+    "isparta": "^4.0.0",
     "mocha": "^3.0.0",
     "should": "^10.0.0"
   }
