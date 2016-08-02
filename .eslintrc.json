@@ -19,17 +19,8 @@
         "no-console":0,
         "no-const-assign": 2,
         "no-unused-vars": 1,
-        "indent": [
-            "error",
-            4
-        ],
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
-        "quotes": [
-            "error",
-            "single"
-        ]
+        "indent": [2, 4],
+        "linebreak-style": [2, "unix"],
+        "quotes": [2, "single"]
     }
 }
