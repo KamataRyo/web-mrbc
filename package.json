@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "install": "bin/install.sh",
-    "compile": "babel --presets es2015 -d lib/ src/",
-    "prepublish": "npm run compile",
+    "mrbc-compile": "bin/mrbc-compile.sh",
+    "transpile": "babel --presets es2015 -d lib/ src/",
+    "prepublish": "npm run transpile",
     "lint": "./node_modules/.bin/eslint -c './.eslintrc.json' ./",
     "test": "./node_modules/.bin/mocha --compilers js:espower-babel/guess spec/**/*.js",
     "watch": "gulp watch"

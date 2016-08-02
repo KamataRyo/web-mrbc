@@ -13,6 +13,6 @@ cd ..
 if [[ -d "mrbc" ]]; then
     rm -rf mrbc
 fi
-git clone --depth=1 git@bitbucket.org:tarosay/mrbc.git
+git clone --depth=1 https://bitbucket.org/tarosay/mrbc.git
 cd mrbc && make
 cd ..
