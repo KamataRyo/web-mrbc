@@ -6,6 +6,18 @@ const app  = express()
 const PORT = meta.config.port
 
 
+// TODO: should be capsulated into `lib`
+import { exec } from 'child_process'
+//// API uniformed header
+const jsonHeader = {
+    'Content-Type': 'application/json; charset=utf-8'
+}
+// path to compiler
+const mrbc = {
+    2: `cd ${ __dirname }/mrbc && ./mrbc`,
+    3: `cd ${ __dirname }/mruby/bin && ./mrbc`,
+}
+
 /*
  * each method for the routes
  */
