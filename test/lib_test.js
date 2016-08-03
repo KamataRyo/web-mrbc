@@ -1,5 +1,6 @@
 import lib from '../src/lib'
 import { expect, should } from 'chai'
+import fs from 'fs'
 should()
 
 describe('test of `getResource` function: ', () => {
@@ -49,17 +50,17 @@ describe('test of `getResource` function: ', () => {
         })
     })
 
-    describe('Case if type `url` given', () => {
+    describe('Case if type `url` given, test of Promise', () => {
 
         let result
         const req = {}
+        const res = {}
         before((done) => {
             req.query = {
                 type: 'url',
                 // plain text with 'hello mruby'
                 content: 'https://gist.githubusercontent.com/KamataRyo/2ae4eae8ec2c8c1645bd986de5eccccb/raw/2bf965388a25aa08a573566c13c196fc6dc33092/web-mrbc-api-test-case-001'
             }
-            const res = {}
             result = lib.getResource(req, res)
             done()
         })
@@ -68,13 +69,43 @@ describe('test of `getResource` function: ', () => {
             expect(result.constructor).to.equal(Promise)
         })
 
-        it('should return content on URL', (done) => {
+        it('should return content on URL', done => {
             result.then(arg => {
                 expect(arg.content).to.equal('hello mruby')
                 done()
             }).catch(done)
         })
+    })
+})
 
+describe('test of `createTempDirectory`', () => {
 
+    it('should be a function', () => {
+        expect(lib.createTempDirectory).to.be.a('function')
+    })
+
+    describe('test of Promise', () => {
+
+        let result
+        const req = {}
+        const res = {}
+        before((done) => {
+            result = lib.createTempDirectory(req, res)
+            done()
+        })
+
+        it('should return new Promise', () => {
+            expect(result.constructor).to.equal(Promise)
+        })
+
+        it('should return new directory path', done => {
+            result.then( arg => {
+                fs.mkdir(arg.path, function(err) {
+                    expect(err).to.be.not.null // folder exists in other sense
+                    arg.cleanupCallback()
+                    done()
+                })
+            }).catch(done)
+        })
     })
 })

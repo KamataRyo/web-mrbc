@@ -1,7 +1,6 @@
 # Web mrbc API
 
 [![Build Status](https://travis-ci.org/KamataRyo/web-mrbc-api.svg?branch=master)](https://travis-ci.org/KamataRyo/web-mrbc-api)
-[![Code Climate](https://codeclimate.com/github/KamataRyo/web-mrbc-api/badges/gpa.svg)](https://codeclimate.com/github/KamataRyo/web-mrbc-api)
 [![codecov](https://codecov.io/gh/KamataRyo/web-mrbc-api/branch/master/graph/badge.svg)](https://codecov.io/gh/KamataRyo/web-mrbc-api)
 
 
