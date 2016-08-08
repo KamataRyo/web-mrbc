@@ -1,6 +1,8 @@
 import lib from '../src/lib'
 import { expect, should } from 'chai'
 import fs from 'fs'
+import HttpError from 'standard-http-error'
+
 should()
 
 describe('test of `getResource` function: ', () => {
@@ -76,6 +78,36 @@ describe('test of `getResource` function: ', () => {
             }).catch(done)
         })
     })
+
+    describe('Case if type `url` given, test of Promise, case fails', () => {
+
+        let result
+        const req = {}
+        const res = {}
+        before((done) => {
+            req.query = {
+                type: 'url',
+                // plain text with 'hello mruby'
+                content: 'http://a.a/request_fails'
+            }
+            result = lib.getResource(req, res)
+            done()
+        })
+
+        it('should return new Promise', () => {
+            expect(result.constructor).to.equal(Promise)
+        })
+
+        it('should emit 500 httpError', done => {
+            result.then(null, err => {
+                expect(err.constructor).to.equal(HttpError)
+                expect(err.code).to.equal(500)
+                done()
+            }).catch(done)
+        })
+
+
+    })
 })
 
 describe('test of `createTempDirectory`', () => {
@@ -89,7 +121,7 @@ describe('test of `createTempDirectory`', () => {
         let result
         const req = {}
         const res = {}
-        before((done) => {
+        before( done => {
             result = lib.createTempDirectory(req, res)
             done()
         })

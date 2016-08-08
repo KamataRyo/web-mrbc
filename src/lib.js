@@ -1,7 +1,8 @@
-import tmp      from 'tmp'
-import fs       from 'fs'
-import request  from 'request'
-import { exec } from 'child_process'
+import tmp       from 'tmp'
+import fs        from 'fs'
+import request   from 'request'
+import { exec }  from 'child_process'
+import HttpError from 'standard-http-error'
 
 /*
  * supportive constants and helper functions
@@ -22,14 +23,6 @@ const makeDownloadHeader = (filename, filesize) => {
         'Content-Type': 'application/octet-stream; charset=utf-8',
         'Content-Length': filesize,
         'Content-Disposition': `attachment; filename="${filename}"`
-    }
-}
-// customized error object about this server response
-class httpError extends Error {
-    setStatus(code, text) {
-        this.statusCode = code
-        this.statusText = text
-        return this
     }
 }
 
@@ -53,17 +46,10 @@ export default {
                 request(url, (err, res, body) => {
                     // unhandle internal error
                     if(err) {
-                        rejected(
-                            new httpError()
-                                .setStatus(500, 'Internal Server Error')
-                        )
+                        rejected(new HttpError(500))
                     // request failed
-                    // TODO: how about case 3xx and 2xx
                     } else if(res.statusCode !== 200) {
-                        rejected(
-                            new httpError()
-                                .setStatus(404, 'Resource not found')
-                        )
+                        rejected(new HttpError(404))
                     // request OK
                     } else {
                         fulfilled({
@@ -81,8 +67,7 @@ export default {
             }
 
         } else {
-            throw new httpError('Unknown resource type queried.')
-                .setStatus(400, 'Bad Request')
+            throw new HttpError(400, 'Unknown resource type queried.')
         }
     },
 
@@ -91,10 +76,8 @@ export default {
         return new Promise((fulfilled, rejected) => {
             tmp.dir((err, path, cleanupCallback) => {
                 if(err) {
-                    rejected(
-                        new httpError()
-                            .setStatus(500, 'Internal Server Error')
-                    )
+                   // unknown internal error
+                    rejected(new HttpError(500))
                 } else {
                     fulfilled({
                         path: path,
@@ -117,10 +100,7 @@ export default {
             fs.writeFile(fileIO.input, resource.content, (err) => {
                 if(err) {
                     tempdir.cleanup()
-                    rejected(
-                        new httpError()
-                            .setStatus(500, 'Internal Server Error')
-                    )
+                    rejected(new HttpError(500))
                 } else {
                     fulfilled(fileIO)
                 }
@@ -144,18 +124,12 @@ export default {
                 exec(command, (err, stdout, stderr) => {
                     if(err) {
                         fileIO.cleanup()
-                        rejected(
-                            new httpError().
-                                setStatus(500, 'Internal Server Error')
-                        )
+                        rejected(new HttpError(500))
 
                     } else if(stderr) {
                         // maybe compile failed
                         fileIO.cleanup()
-                        rejected(
-                            new httpError('Compile error occured.')
-                                .setStatus(400, 'Bad Request')
-                        )
+                        rejected(new HttpError(400, 'Compile Error'))
 
                     } else {
                         // maybe compile success
@@ -174,8 +148,7 @@ export default {
                 // response as download file
                 exec(`cat ${fileIO.output.output}`, (err, stdout, stderr) => {
                     if(err || stderr) {
-                        throw new httpError()
-                            .setStatus(500, 'Internal Server Error')
+                        throw new HttpError(500)
                     } else {
                         res
                             .set(makeDownloadHeader(fileIO.outputBase))
