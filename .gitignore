@@ -10,3 +10,7 @@ mrbc/
 mruby/
 
 *.map
+
+# prevent test fixtures contamination
+test/*
+!test/*.js

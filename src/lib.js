@@ -38,7 +38,7 @@ export default {
     DEFAULT_OUTPUT_NAME,
 
     // Abstract resource. if url given, request the content at first
-    getResource: (req, res) => {
+    getResource: (req) => {
         const query = req.query
         if(!query.output || query.output === '') {
             query.output = DEFAULT_OUTPUT_NAME
@@ -78,10 +78,11 @@ export default {
     },
 
     // ctreate a temporary directory
-    createTempDirectory: (req, res) => {
+    // argument interrupt raise error artificially for test
+    createTempDirectory: (interrupt) => {
         return new Promise((fulfilled, rejected) => {
             tmp.dir((err, path, cleanupCallback) => {
-                if(err) {
+                if(err || interrupt) {
                    // unknown internal error
                     rejected(new HttpError(500))
                 } else {
@@ -94,18 +95,19 @@ export default {
         })
     },
 
-    // write content to the temporary file
-    writeTempFile: ([resource, tempdir]) => {
+    // write content to a new file under given directory
+    writeFile: ([resource, dir]) => {
         return new Promise((fulfilled, rejected) => {
-            let fileIO = {
-                input: `${tempdir.path}/${resource.output}.rb`,
-                output: `${tempdir.path}/${resource.output}`,
+            const fileIO = {
+                input: `${dir.path}/${resource.output}.rb`,
+                output: `${dir.path}/${resource.output}`,
                 outputBase: resource.output,
-                cleanup: tempdir.cleanup
+                cleanup: dir.cleanupCallback
             }
             fs.writeFile(fileIO.input, resource.content, (err) => {
                 if(err) {
-                    tempdir.cleanup()
+                    console.log(fileIO)
+                    fileIO.cleanup()
                     rejected(new HttpError(500))
                 } else {
                     fulfilled(fileIO)
@@ -115,11 +117,11 @@ export default {
     },
 
     // exec compile
-    execCompile: (req, options) => {
+    execCompile: (format, options) => {
         return (fileIO) => {
             return new Promise((fulfilled, rejected) => {
                 // specify bytecode format requested
-                const mrbcx = req.query.format === '2' ? mrbc[2] : mrbc[3]
+                const mrbcx = (format.toString() === '2') ? mrbc[2] : mrbc[3]
 
                 // redundant options arguments
                 if(Array.isArray(options)) {

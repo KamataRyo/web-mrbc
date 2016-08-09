@@ -1,7 +1,13 @@
 import lib from '../src/lib'
 import { expect, should } from 'chai'
+import {file as chai_files, dir as chai_dirs} from 'chai-files'
 import fs from 'fs'
 import HttpError from 'standard-http-error'
+
+// wrapper
+const expectfile = (actual) => expect(chai_files(actual))
+const expectDir = (actual) => expect(chai_dirs(actual))
+
 
 should()
 
@@ -27,17 +33,17 @@ describe('test of `getResource` function: ', () => {
             const result = lib.getResource(req)
             const actual = req.query
 
-            return result.then(arg => {
-                expect(arg.output).to.equal(actual.output)
-                expect(arg.content).to.equal(actual.content)
+            return result.then(resource => {
+                expect(resource.output).to.equal(actual.output)
+                expect(resource.content).to.equal(actual.content)
             })
         })
 
         it('should return default output', () => {
             const result = lib.getResource(req)
 
-            return result.then(arg => {
-                expect(arg.output).to.equal(lib.DEFAULT_OUTPUT_NAME)
+            return result.then(resource => {
+                expect(resource.output).to.equal(lib.DEFAULT_OUTPUT_NAME)
             })
         })
     })
@@ -61,8 +67,8 @@ describe('test of `getResource` function: ', () => {
         it('should be resolved', () => {
             const result = lib.getResource(req)
 
-            return result.then(arg => {
-                expect(arg.content).to.equal('print \'hello mruby\'')
+            return result.then(resource => {
+                expect(resource.content).to.equal('print \'hello mruby\'')
             })
         })
     })
@@ -125,11 +131,58 @@ describe('test of `createTempDirectory`', () => {
     it('should return new directory path', () => {
         const result = lib.createTempDirectory()
 
-        return result.then( arg => {
-            fs.mkdir(arg.path, function(err) {
-                expect(err).to.be.not.null // folder exists in other sense
-                arg.cleanupCallback()
-            })
+        return result.then(dir => {
+            expectDir(dir.path).to.exist
+            dir.cleanupCallback()
         })
     })
+
+    it('should be rejected if internal error occured', () => {
+        const errorInterruption = true
+        const result = lib.createTempDirectory(errorInterruption)
+
+        return result.then()
+            .catch( err => {
+                expect(err.constructor).to.equal(HttpError)
+                expect(err.code).to.equal(500)
+            })
+    })
+})
+
+describe('test of `writeFile`', () => {
+
+    const resource = {}
+    const dir = {}
+    beforeEach(done => {
+        resource.content = 'the content'
+        resource.output = 'test.mrb'
+        dir.path = __dirname
+        dir.cleanupCallback = () => {
+            fs.unlinkSync(`${__dirname}/${resource.output}.rb`)
+        } // this mimic cleanupCallback which may be passed.
+        done()
+    })
+
+    it('should return IO object about the file', () => {
+        const result = lib.writeFile([resource, dir])
+
+        return result.then(fileIO => {
+            expect(fileIO.input).to.equal(`${__dirname}/${resource.output}.rb`)
+            expect(fileIO.output).to.equal(`${__dirname}/${resource.output}`)
+            expect(fileIO.cleanup).to.be.a('function')
+            fileIO.cleanup()
+        })
+    })
+
+    it('should generate file', () => {
+        const result = lib.writeFile([resource, dir])
+
+        return result.then(fileIO => {
+            const actual = fs.readFileSync(fileIO.input).toString()
+
+            expect(actual).to.equal(resource.content)
+            fileIO.cleanup()
+        })
+    })
+
 })

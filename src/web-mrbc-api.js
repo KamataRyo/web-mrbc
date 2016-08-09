@@ -25,9 +25,9 @@ const webCompile = () => // this inner function aimed only to format interfaces
     (req, res) => {
         Promise.all([
             lib.getResource(req),
-            lib.createTempDirectory
+            lib.createTempDirectory()
         ])
-            .then(lib.writeTempFile)
+            .then(lib.writeFile)
             .then(lib.execCompile(req))
             .then(lib.makeResponse(req, res))
             .catch(lib.makeErrorResponse(res))
