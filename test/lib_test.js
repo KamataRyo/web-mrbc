@@ -200,7 +200,7 @@ describe('test of `execCompile`', () => {
 
         return lib.execCompile(format, options)(fileIO)
             .then(({fileIO}) => {
-                fs.readFileSync(fileIO.output) // error thrown not existing the file
+                fs.readFileSync(fileIO.output) // error thrown without file
                 fileIO.cleanup()
             })
     })
@@ -214,8 +214,8 @@ describe('test of `makeResponse`', () => {
         let header = undefined;
         let whatSent = undefined;
         const res = {
-            set: (arg) => { header = arg },
-            send: (arg) => { whatSent = arg },
+            set: (arg) => { header = arg }, // interceptive stub
+            send: (arg) => { whatSent = arg }, // interceptive stub
         }
         const fileIO = {
             output: `${__dirname}/test3.mrb`,
@@ -228,8 +228,10 @@ describe('test of `makeResponse`', () => {
 
         return lib.makeResponse(download, res)({fileIO})
             .then(() => {
-                expect(header['Content-Type']).to.equal('application/octet-stream; charset=utf-8')
-                expect(header['Content-Disposition']).to.equal('attachment; filename="' + fileIO.outputBase + '"')
+                expect(header['Content-Type'])
+                    .to.equal('application/octet-stream; charset=utf-8')
+                expect(header['Content-Disposition'])
+                    .to.equal(`attachment; filename="${fileIO.outputBase}"`)
                 expect(whatSent).to.equal(content)
                 fileIO.cleanup()
             })
@@ -241,8 +243,8 @@ describe('test of `makeResponse`', () => {
         let header = undefined;
         let whatJsonSent = undefined;
         const res = {
-            set: (arg) => { header = arg },
-            json: (arg) => { whatJsonSent = arg }
+            set: (arg) => { header = arg }, // interceptive stub
+            json: (arg) => { whatJsonSent = arg } // interceptive stub
         }
         const fileIO = {
             output: `${__dirname}/test4.mrb`,
@@ -255,8 +257,10 @@ describe('test of `makeResponse`', () => {
 
         return lib.makeResponse(download, res)({fileIO})
             .then(() => {
-                expect(header['Content-Type']).to.equal('application/json; charset=utf-8')
-                expect(whatJsonSent.stdout).to.equal(content)
+                expect(header['Content-Type'])
+                    .to.equal('application/json; charset=utf-8')
+                expect(whatJsonSent.stdout)
+                    .to.equal(content)
                 fileIO.cleanup()
             })
     })
