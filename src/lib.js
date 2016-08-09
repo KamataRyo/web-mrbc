@@ -10,8 +10,8 @@ import HttpError from 'standard-http-error'
 
 // path to compiler
 const mrbc = {
-    2: `cd ${ __dirname }/mrbc && ./mrbc`,
-    3: `cd ${ __dirname }/mruby/bin && ./mrbc`,
+    2: `${ __dirname }/../mrbc/mrbc`,
+    3: `${ __dirname }/../mruby/bin/mrbc`,
 }
 // API uniformed header
 const jsonHeader = {
@@ -127,9 +127,11 @@ export default {
                     options = options.join('')
                 }
 
-                const command = `${mrbcx} ${options} -o ${fileIO.output} ${fileIO.input}`
+                const command = `${mrbcx} ${options} -o"${fileIO.output}" "${fileIO.input}"`
                 exec(command, (err, stdout, stderr) => {
                     if(err) {
+                        console.log(err)
+
                         fileIO.cleanup()
                         rejected(new HttpError(500))
 

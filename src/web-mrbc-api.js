@@ -24,7 +24,7 @@ const mrbc = {
 const webCompile = () => // this inner function aimed only to format interfaces
     (req, res) => {
         Promise.all([
-            lib.getResource(req),
+            lib.getResource(req.query),
             lib.createTempDirectory()
         ])
             .then(lib.writeFile)

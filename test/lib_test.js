@@ -1,12 +1,7 @@
 import lib from '../src/lib'
+import fs  from 'fs'
 import { expect, should } from 'chai'
-import {file as chai_files, dir as chai_dirs} from 'chai-files'
-import fs from 'fs'
 import HttpError from 'standard-http-error'
-
-// wrapper
-const expectfile = (actual) => expect(chai_files(actual))
-const expectDir = (actual) => expect(chai_dirs(actual))
 
 should()
 
@@ -131,8 +126,10 @@ describe('test of `createTempDirectory`', () => {
         const result = lib.createTempDirectory()
 
         return result.then(dir => {
-            expectDir(dir.path).to.exist
+            fs.mkdirSync(dir.path) // assert if directory already created
             dir.cleanupCallback()
+        }).catch((err) => {
+            expect(err.constructor).to.equal(Error)
         })
     })
 
@@ -184,4 +181,26 @@ describe('test of `writeFile`', () => {
         })
     })
 
+})
+
+describe('test of `execCompile`', () => {
+
+    it('should do compile', () => {
+        const format = 3
+        const options = []
+        const fileIO = {}
+        fileIO.input = `${__dirname}/test2.rb`
+        fileIO.output = `${__dirname}/test2.mrb`
+        fileIO.cleanup = () => {
+            fs.unlinkSync(fileIO.input)
+            fs.unlinkSync(fileIO.output)
+        }
+        fs.writeFileSync(fileIO.input, 'print \'hello mruby\'')
+
+        return lib.execCompile(format, options)(fileIO)
+            .then(({fileIO, stdout}) => {
+                fs.readFileSync(fileIO.output) // error throwen if file not exists
+                fileIO.cleanup()
+            })
+    })
 })
