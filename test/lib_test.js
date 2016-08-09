@@ -8,7 +8,6 @@ import HttpError from 'standard-http-error'
 const expectfile = (actual) => expect(chai_files(actual))
 const expectDir = (actual) => expect(chai_dirs(actual))
 
-
 should()
 
 describe('test of `getResource` function: ', () => {
@@ -30,7 +29,7 @@ describe('test of `getResource` function: ', () => {
         it('should retrun expected result', () => {
             req.query.content = 'some content included'
             req.query.output  = 'outputname.mrb'
-            const result = lib.getResource(req)
+            const result = lib.getResource(req.query)
             const actual = req.query
 
             return result.then(resource => {
@@ -40,7 +39,7 @@ describe('test of `getResource` function: ', () => {
         })
 
         it('should return default output', () => {
-            const result = lib.getResource(req)
+            const result = lib.getResource(req.query)
 
             return result.then(resource => {
                 expect(resource.output).to.equal(lib.DEFAULT_OUTPUT_NAME)
@@ -59,13 +58,13 @@ describe('test of `getResource` function: ', () => {
         })
 
         it('should return new Promise', () => {
-            const result = lib.getResource(req)
+            const result = lib.getResource(req.query)
 
             expect(result.constructor).to.equal(Promise)
         })
 
         it('should be resolved', () => {
-            const result = lib.getResource(req)
+            const result = lib.getResource(req.query)
 
             return result.then(resource => {
                 expect(resource.content).to.equal('print \'hello mruby\'')
@@ -84,7 +83,7 @@ describe('test of `getResource` function: ', () => {
         })
 
         it('should be rejected', () => {
-            const result = lib.getResource(req)
+            const result = lib.getResource(req.query)
 
             return result.then()
                 .catch(err => {
@@ -105,7 +104,7 @@ describe('test of `getResource` function: ', () => {
         })
 
         it('should be rejected', () => {
-            const result = lib.getResource(req)
+            const result = lib.getResource(req.query)
 
             return result.then()
                 .catch(err => {

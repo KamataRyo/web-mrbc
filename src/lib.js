@@ -38,8 +38,7 @@ export default {
     DEFAULT_OUTPUT_NAME,
 
     // Abstract resource. if url given, request the content at first
-    getResource: (req) => {
-        const query = req.query
+    getResource: (query) => {
         if(!query.output || query.output === '') {
             query.output = DEFAULT_OUTPUT_NAME
         }
