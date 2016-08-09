@@ -189,17 +189,18 @@ describe('test of `execCompile`', () => {
         const format = 3
         const options = []
         const fileIO = {}
+        const content = 'print \'hello mruby\''
         fileIO.input = `${__dirname}/test2.rb`
         fileIO.output = `${__dirname}/test2.mrb`
         fileIO.cleanup = () => {
             fs.unlinkSync(fileIO.input)
             fs.unlinkSync(fileIO.output)
         }
-        fs.writeFileSync(fileIO.input, 'print \'hello mruby\'')
+        fs.writeFileSync(fileIO.input, content)
 
         return lib.execCompile(format, options)(fileIO)
-            .then(({fileIO, stdout}) => {
-                fs.readFileSync(fileIO.output) // error throwen if file not exists
+            .then(({fileIO}) => {
+                fs.readFileSync(fileIO.output) // error thrown not existing the file
                 fileIO.cleanup()
             })
     })

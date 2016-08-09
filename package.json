@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "mrbc-compile": "bin/mrbc-compile.sh",
+    "install": "bin/mrbc-compile.sh",
     "transpile": "babel --presets es2015 -d lib/ src/",
     "prepublish": "npm run transpile",
     "lint": "$(npm bin)/eslint -c './.eslintrc.json' ./",
