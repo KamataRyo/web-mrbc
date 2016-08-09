@@ -13,100 +13,100 @@ describe('test of `getResource` function: ', () => {
 
     describe('Case if type `source` given', () => {
 
-        it('should retrun output', () => {
-            const req = {
-                query: {
-                    type: 'source',
-                    output: 'outputname.mrb'
-                }
-            }
-            const res = {}
-            const result = lib.getResource(req, res)
-            const actual = req.query
-            expect(result.output).to.equal(actual.output)
+        const req = { query: {} }
+        beforeEach(done => {
+            req.query.type    = 'source'
+            req.query.content = undefined
+            req.query.output  = undefined
+            done()
         })
 
-        it('should retrun content', () => {
-            const req = {
-                query: {
-                    type: 'source',
-                    content: 'some content included'
-                }
-            }
-            const res = {}
-            const result = lib.getResource(req, res)
+        it('should retrun expected result', () => {
+            req.query.content = 'some content included'
+            req.query.output  = 'outputname.mrb'
+            const result = lib.getResource(req)
             const actual = req.query
-            expect(result.content).to.equal(actual.content)
+
+            return result.then(arg => {
+                expect(arg.output).to.equal(actual.output)
+                expect(arg.content).to.equal(actual.content)
+            })
         })
 
-        it('should retrun default output', () => {
-            const req = {
-                query: {
-                    type: 'source'
-                }
-            }
-            const res = {}
-            const result = lib.getResource(req, res)
+        it('should return default output', () => {
+            const result = lib.getResource(req)
 
-            expect(result.output).to.equal('noname.mrb')
+            return result.then(arg => {
+                expect(arg.output).to.equal(lib.DEFAULT_OUTPUT_NAME)
+            })
         })
     })
 
-    describe('Case if type `url` given, test of Promise', () => {
+    describe('Case if type `url` given (success)', () => {
 
-        let result
-        const req = {}
-        const res = {}
-        before((done) => {
-            req.query = {
-                type: 'url',
-                // plain text with 'hello mruby'
-                content: 'https://gist.githubusercontent.com/KamataRyo/2ae4eae8ec2c8c1645bd986de5eccccb/raw/2bf965388a25aa08a573566c13c196fc6dc33092/web-mrbc-api-test-case-001'
-            }
-            result = lib.getResource(req, res)
+        const req = { query: {} }
+        beforeEach(done => {
+            req.query.type    = 'url'
+            req.query.content = 'https://gist.githubusercontent.com/KamataRyo/2ae4eae8ec2c8c1645bd986de5eccccb/raw/38839b9f1eb6e5bba978f83bbf19c8f8c19298f2/web-mrbc-api-test-case-001.rb'
+            req.query.output  = undefined
             done()
         })
 
         it('should return new Promise', () => {
+            const result = lib.getResource(req)
+
             expect(result.constructor).to.equal(Promise)
         })
 
-        it('should return content on URL', done => {
-            result.then(arg => {
-                expect(arg.content).to.equal('hello mruby')
-                done()
-            }).catch(done)
+        it('should be resolved', () => {
+            const result = lib.getResource(req)
+
+            return result.then(arg => {
+                expect(arg.content).to.equal('print \'hello mruby\'')
+            })
         })
     })
 
-    describe('Case if type `url` given, test of Promise, case fails', () => {
+    describe('Case if type `url` given (failure)', () => {
 
-        let result
-        const req = {}
-        const res = {}
-        before((done) => {
-            req.query = {
-                type: 'url',
-                // plain text with 'hello mruby'
-                content: 'http://a.a/request_fails'
-            }
-            result = lib.getResource(req, res)
+        const req = { query: {} }
+        beforeEach( done => {
+            req.query.type    = 'url'
+            req.query.content = 'https://gist.githubusercontent.com/KamataRyo/2ae4eae8ec2c8c1645bd986de5eccccb/raw/2bf965388a25aa08a573566c13c196fc6dc33092/web-mrbc-api-test-case-001_prefix_which_not_exists'
+            req.query.output  = undefined
             done()
         })
 
-        it('should return new Promise', () => {
-            expect(result.constructor).to.equal(Promise)
+        it('should be rejected', () => {
+            const result = lib.getResource(req)
+
+            return result.then()
+                .catch(err => {
+                    expect(err.constructor).to.equal(HttpError)
+                    expect(err.code).to.equal(404)
+                })
+        })
+    })
+
+    describe('Case if unknown type given', () => {
+
+        const req = { query: {} }
+        beforeEach( done => {
+            req.query.type    = 'Any undefined type name string'
+            req.query.content = undefined
+            req.query.output  = undefined
+            done()
         })
 
-        it('should emit 500 httpError', done => {
-            result.then(null, err => {
-                expect(err.constructor).to.equal(HttpError)
-                expect(err.code).to.equal(500)
-                done()
-            }).catch(done)
+        it('should be rejected', () => {
+            const result = lib.getResource(req)
+
+            return result.then()
+                .catch(err => {
+                    expect(err.constructor).to.equal(HttpError)
+                    expect(err.code).to.equal(400)
+                })
         })
-
-
     })
 })
 
@@ -116,28 +116,20 @@ describe('test of `createTempDirectory`', () => {
         expect(lib.createTempDirectory).to.be.a('function')
     })
 
-    describe('test of Promise', () => {
+    it('should return new Promise', () => {
+        const result = lib.createTempDirectory()
 
-        let result
-        const req = {}
-        const res = {}
-        before( done => {
-            result = lib.createTempDirectory(req, res)
-            done()
-        })
+        expect(result.constructor).to.equal(Promise)
+    })
 
-        it('should return new Promise', () => {
-            expect(result.constructor).to.equal(Promise)
-        })
+    it('should return new directory path', () => {
+        const result = lib.createTempDirectory()
 
-        it('should return new directory path', done => {
-            result.then( arg => {
-                fs.mkdir(arg.path, function(err) {
-                    expect(err).to.be.not.null // folder exists in other sense
-                    arg.cleanupCallback()
-                    done()
-                })
-            }).catch(done)
+        return result.then( arg => {
+            fs.mkdir(arg.path, function(err) {
+                expect(err).to.be.not.null // folder exists in other sense
+                arg.cleanupCallback()
+            })
         })
     })
 })

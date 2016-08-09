@@ -26,17 +26,22 @@ const makeDownloadHeader = (filename, filesize) => {
     }
 }
 
+const DEFAULT_OUTPUT_NAME = 'noname.mrb'
 
 /*
  * Tasks
+ * They use req and res object on express server
  */
 
 export default {
+
+    DEFAULT_OUTPUT_NAME,
+
     // Abstract resource. if url given, request the content at first
     getResource: (req, res) => {
         const query = req.query
-        if(!query.output) {
-            query.output = 'noname.mrb'
+        if(!query.output || query.output === '') {
+            query.output = DEFAULT_OUTPUT_NAME
         }
 
         if(query.type === 'url') {
@@ -44,30 +49,31 @@ export default {
             return new Promise((fulfilled, rejected) => {
                 // make request at first
                 request(url, (err, res, body) => {
-                    // unhandle internal error
-                    if(err) {
-                        rejected(new HttpError(500))
-                    // request failed
-                    } else if(res.statusCode !== 200) {
-                        rejected(new HttpError(404))
                     // request OK
-                    } else {
+                    if (!err && res.statusCode === 200) {
                         fulfilled({
                             content: body,
                             output: query.output
                         })
+                    } else {
+                        // request failed
+                        rejected(new HttpError(404))
                     }
                 })
             })
 
         } else if(query.type === 'source') {
-            return {
-                content: query.content,
-                output: query.output
-            }
+            return new Promise((fulfilled) => {
+                fulfilled({
+                    content: query.content,
+                    output: query.output
+                })
+            })
 
         } else {
-            throw new HttpError(400, 'Unknown resource type queried.')
+            return new Promise((fulfilled, rejected) => {
+                rejected(new HttpError(400, 'Unknown resource type queried.'))
+            })
         }
     },
 
