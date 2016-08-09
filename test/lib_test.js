@@ -205,3 +205,59 @@ describe('test of `execCompile`', () => {
             })
     })
 })
+
+describe('test of `makeResponse`', () => {
+
+    it('should be downloaded', () => {
+        const download = true
+        const content = 'content'
+        let header = undefined;
+        let whatSent = undefined;
+        const res = {
+            set: (arg) => { header = arg },
+            send: (arg) => { whatSent = arg },
+        }
+        const fileIO = {
+            output: `${__dirname}/test3.mrb`,
+            outputBase: 'test3.mrb',
+            cleanup: () => {
+                fs.unlinkSync(fileIO.output)
+            }
+        }
+        fs.writeFileSync(fileIO.output, content)
+
+        return lib.makeResponse(download, res)({fileIO})
+            .then(() => {
+                expect(header['Content-Type']).to.equal('application/octet-stream; charset=utf-8')
+                expect(header['Content-Disposition']).to.equal('attachment; filename="' + fileIO.outputBase + '"')
+                expect(whatSent).to.equal(content)
+                fileIO.cleanup()
+            })
+    })
+
+    it('should be json', () => {
+        const download = false
+        const content = 'content'
+        let header = undefined;
+        let whatJsonSent = undefined;
+        const res = {
+            set: (arg) => { header = arg },
+            json: (arg) => { whatJsonSent = arg }
+        }
+        const fileIO = {
+            output: `${__dirname}/test4.mrb`,
+            outputBase: 'test4.mrb',
+            cleanup: () => {
+                fs.unlinkSync(fileIO.output)
+            }
+        }
+        fs.writeFileSync(fileIO.output, content)
+
+        return lib.makeResponse(download, res)({fileIO})
+            .then(() => {
+                expect(header['Content-Type']).to.equal('application/json; charset=utf-8')
+                expect(whatJsonSent.stdout).to.equal(content)
+                fileIO.cleanup()
+            })
+    })
+})

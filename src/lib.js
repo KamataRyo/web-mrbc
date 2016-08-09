@@ -142,7 +142,7 @@ export default {
 
                     } else {
                         // maybe compile success
-                        fulfilled({fileIO, stdout})
+                        fulfilled({fileIO})
                     }
                 })
             })
@@ -150,27 +150,26 @@ export default {
     },
 
     // do res.send
-    makeResponse: (req, res) => {
-        return ({fileIO, stdout}) => {
-            // TODO: check the type of Express response 1 or '1'
-            if(req.query.download === 1) {
-                // response as download file
-                exec(`cat ${fileIO.output.output}`, (err, stdout, stderr) => {
+    makeResponse: (download, res) => {
+        return ({fileIO}) => {
+            return new Promise((fulfilled, rejected) => {
+                exec(`cat ${fileIO.output}`, (err, stdout, stderr) => {
                     if(err || stderr) {
-                        throw new HttpError(500)
+                        rejected(new HttpError(500))
                     } else {
-                        res
-                            .set(makeDownloadHeader(fileIO.outputBase))
-                            .send(stdout)
+                        if (download) {
+                            res.set(makeDownloadHeader(fileIO.outputBase))
+                            res.send(stdout)
+                            fulfilled(true)
+                        } else {
+                            // response as buffer
+                            res.set(jsonHeader)
+                            res.json({stdout})
+                            fulfilled(true)
+                        }
                     }
                 })
-
-            } else {
-                // response as buffer
-                res
-                    .set(jsonHeader)
-                    .json({stdout})
-            }
+            })
         }
     },
 
