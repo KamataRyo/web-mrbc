@@ -1,5 +1,4 @@
 sudo: false
-install: make get-deps
 language: node_js
 node_js:
 - 5
