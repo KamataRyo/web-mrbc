@@ -237,7 +237,7 @@ describe('test of `makeResponse`', () => {
             })
     })
 
-    it('should be json', () => {
+    it('should emit json', () => {
         const download = false
         const content = 'content'
         let header = undefined;
@@ -263,5 +263,27 @@ describe('test of `makeResponse`', () => {
                     .to.equal(content)
                 fileIO.cleanup()
             })
+    })
+})
+
+describe('test of `makeErrorResponse`', () => {
+
+    it('should response error', () => {
+        let header = undefined;
+        let whatJsonSent = undefined;
+        let calledback = false;
+        const res = {
+            set: (arg) => { header = arg }, // interceptive stub
+            json: (arg) => { whatJsonSent = arg } // interceptive stub
+        }
+        const err = new HttpError(400)
+        err.callback = () => {calledback = true}
+
+        lib.makeErrorResponse(res)(err)
+        expect(header['Content-Type'])
+            .to.equal('application/json; charset=utf-8')
+        expect(whatJsonSent.stdout)
+            .to.equal('aaa')
+        expect(calledback).to.equal(false)
     })
 })

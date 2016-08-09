@@ -175,8 +175,8 @@ export default {
 
     // do res.send in case erro occured
     makeErrorResponse: (res) => {
-        (err) => {
-            res.header('Content-Type', 'application/json; charset=utf-8')
+        return (err) => {
+            res.set(jsonHeader)// TODO: set Status Code. Also in test
             res.json({
                 statusCode: err.statusCode,
                 statusText: err.statusText,
