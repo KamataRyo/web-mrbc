@@ -279,11 +279,13 @@ describe('test of `makeErrorResponse`', () => {
         const err = new HttpError(400)
         err.callback = () => {calledback = true}
 
-        lib.makeErrorResponse(res)(err)
-        expect(header['Content-Type'])
-            .to.equal('application/json; charset=utf-8')
-        expect(whatJsonSent.stdout)
-            .to.equal('aaa')
-        expect(calledback).to.equal(false)
+        return lib.makeErrorResponse(res)(err)
+            .then(() => {
+                expect(header['Content-Type'])
+                    .to.equal('application/json; charset=utf-8')
+                expect(whatJsonSent.code)
+                    .to.equal(400)
+                expect(calledback).to.equal(true)
+            })
     })
 })

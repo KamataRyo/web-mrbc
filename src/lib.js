@@ -176,16 +176,19 @@ export default {
     // do res.send in case erro occured
     makeErrorResponse: (res) => {
         return (err) => {
-            res.set(jsonHeader)// TODO: set Status Code. Also in test
-            res.json({
-                statusCode: err.statusCode,
-                statusText: err.statusText,
-                message: err.message
+            return new Promise((fulfilled) => {
+                res.set(jsonHeader)// TODO: set Status Code. Also in test
+                res.json({
+                    code: err.code,
+                    name: err.name,
+                    message: err.message
+                })
+                // after all
+                err.callback
+                    && (typeof err.callback === 'function')
+                    && err.callback()
+                fulfilled()
             })
-            // after all
-            err.callback
-                && (typeof err.callback === 'function')
-                && err.callback()
         }
     },
 }
