@@ -6,6 +6,10 @@ if [[ -d "mruby" ]]; then
     rm -rf mruby
 fi
 git clone --depth=1 https://github.com/mruby/mruby.git
+## this enable travis to build mruby
+if [[ $TRAVIS == "true" ]]; then
+    cp -fp mruby/.travis_build_config.rb mruby/build_config.rb
+fi
 cd mruby && make
 cd ..
 
