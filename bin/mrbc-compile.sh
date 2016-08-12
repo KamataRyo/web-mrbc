@@ -8,8 +8,13 @@ fi
 git clone --depth=1 https://github.com/mruby/mruby.git
 ## this enable travis to build mruby
 if [[ $TRAVIS == "true" ]]; then
-    cp -fp mruby/.travis_build_config.rb mruby/build_config.rb
+    echo 'MRuby::Build.new do |conf|' > mruby/build_config.rb
+    echo 'toolchain :gcc' >> mruby/build_config.rb
+    echo "conf.gembox 'default'" >> mruby/build_config.rb
+    echo "conf.gem '..'" >> mruby/build_config.rb
+    echo 'end' >> mruby/build_config.rb
 fi
+
 cd mruby && make
 cd ..
 
