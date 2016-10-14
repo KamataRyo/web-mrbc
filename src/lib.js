@@ -1,3 +1,5 @@
+'use strict'
+
 import tmp       from 'tmp'
 import fs        from 'fs'
 import request   from 'request'
@@ -10,20 +12,20 @@ import HttpError from 'standard-http-error'
 
 // path to compiler
 const mrbc = {
-    2: `${ __dirname }/../mrbc/mrbc`,
-    3: `${ __dirname }/../mruby/bin/mrbc`,
+  2: `${ __dirname }/../mrbc/mrbc`,
+  3: `${ __dirname }/../mruby/bin/mrbc`,
 }
 // API uniformed header
 const jsonHeader = {
-    'Content-Type': 'application/json; charset=utf-8'
+  'Content-Type': 'application/json; charset=utf-8'
 }
 // For binary download
 const makeDownloadHeader = (filename, filesize) => {
-    return {
-        'Content-Type': 'application/octet-stream; charset=utf-8',
-        'Content-Length': filesize,
-        'Content-Disposition': `attachment; filename="${filename}"`
-    }
+  return {
+    'Content-Type': 'application/octet-stream; charset=utf-8',
+    'Content-Length': filesize,
+    'Content-Disposition': `attachment; filename="${filename}"`
+  }
 }
 
 const DEFAULT_OUTPUT_NAME = 'noname.mrb'
@@ -35,162 +37,162 @@ const DEFAULT_OUTPUT_NAME = 'noname.mrb'
 
 export default {
 
-    DEFAULT_OUTPUT_NAME,
+  DEFAULT_OUTPUT_NAME,
 
-    // Abstract resource. if url given, request the content at first
-    getResource: (query) => {
-        if(!query.output || query.output === '') {
-            query.output = DEFAULT_OUTPUT_NAME
-        }
+  // Abstract resource. if url given, request the content at first
+  getResource: (query) => {
+    if(!query.output || query.output === '') {
+      query.output = DEFAULT_OUTPUT_NAME
+    }
 
-        if(query.type === 'url') {
-            let url = query.content
-            return new Promise((fulfilled, rejected) => {
-                // make request at first
-                request(url, (err, res, body) => {
-                    // request OK
-                    if (!err && res.statusCode === 200) {
-                        fulfilled({
-                            content: body,
-                            output: query.output
-                        })
-                    } else {
-                        // request failed
-                        rejected(new HttpError(404))
-                    }
-                })
+    if(query.type === 'url') {
+      let url = query.content
+      return new Promise((fulfilled, rejected) => {
+        // make request at first
+        request(url, (err, res, body) => {
+          // request OK
+          if (!err && res.statusCode === 200) {
+            fulfilled({
+              content: body,
+              output: query.output
             })
+          } else {
+            // request failed
+            rejected(new HttpError(404))
+          }
+        })
+      })
 
-        } else if(query.type === 'source') {
-            return new Promise((fulfilled) => {
-                fulfilled({
-                    content: query.content,
-                    output: query.output
-                })
-            })
+    } else if(query.type === 'source') {
+      return new Promise((fulfilled) => {
+        fulfilled({
+          content: query.content,
+          output: query.output
+        })
+      })
 
+    } else {
+      return new Promise((fulfilled, rejected) => {
+        rejected(new HttpError(400, 'Unknown resource type queried.'))
+      })
+    }
+  },
+
+  // ctreate a temporary directory
+  // argument interrupt raise error artificially for test
+  createTempDirectory: (interrupt) => {
+    return new Promise((fulfilled, rejected) => {
+      tmp.dir((err, path, cleanupCallback) => {
+        if(err || interrupt) {
+          // unknown internal error
+          rejected(new HttpError(500))
         } else {
-            return new Promise((fulfilled, rejected) => {
-                rejected(new HttpError(400, 'Unknown resource type queried.'))
-            })
+          fulfilled({
+            path: path,
+            cleanupCallback
+          })
         }
-    },
+      })
+    })
+  },
 
-    // ctreate a temporary directory
-    // argument interrupt raise error artificially for test
-    createTempDirectory: (interrupt) => {
-        return new Promise((fulfilled, rejected) => {
-            tmp.dir((err, path, cleanupCallback) => {
-                if(err || interrupt) {
-                   // unknown internal error
-                    rejected(new HttpError(500))
-                } else {
-                    fulfilled({
-                        path: path,
-                        cleanupCallback
-                    })
-                }
-            })
+  // write content to a new file under given directory
+  writeFile: ([resource, dir]) => {
+    return new Promise((fulfilled, rejected) => {
+      const fileIO = {
+        input: `${dir.path}/${resource.output}.rb`,
+        output: `${dir.path}/${resource.output}`,
+        outputBase: resource.output,
+        cleanup: dir.cleanupCallback
+      }
+      fs.writeFile(fileIO.input, resource.content, (err) => {
+        if(err) {
+          console.log(fileIO)
+          fileIO.cleanup()
+          rejected(new HttpError(500))
+        } else {
+          fulfilled(fileIO)
+        }
+      })
+    })
+  },
+
+  // exec compile
+  execCompile: (format, options) => {
+    return (fileIO) => {
+      return new Promise((fulfilled, rejected) => {
+        // specify bytecode format requested
+        const mrbcx = (format.toString() === '2') ? mrbc[2] : mrbc[3]
+
+        // redundant options arguments
+        if(Array.isArray(options)) {
+          options = options.join('')
+        }
+
+        const command = `${mrbcx} ${options} -o"${fileIO.output}" "${fileIO.input}"`
+        exec(command, (err, stdout, stderr) => {
+          if(err) {
+            console.log(err)
+
+            fileIO.cleanup()
+            rejected(new HttpError(500))
+
+          } else if(stderr) {
+            // maybe compile failed
+            fileIO.cleanup()
+            rejected(new HttpError(400, 'Compile Error'))
+
+          } else {
+          // maybe compile success
+            fulfilled({fileIO})
+          }
         })
-    },
+      })
+    }
+  },
 
-    // write content to a new file under given directory
-    writeFile: ([resource, dir]) => {
-        return new Promise((fulfilled, rejected) => {
-            const fileIO = {
-                input: `${dir.path}/${resource.output}.rb`,
-                output: `${dir.path}/${resource.output}`,
-                outputBase: resource.output,
-                cleanup: dir.cleanupCallback
+  // do res.send
+  makeResponse: (download, res) => {
+    return ({fileIO}) => {
+      return new Promise((fulfilled, rejected) => {
+        exec(`cat ${fileIO.output}`, (err, stdout, stderr) => {
+          if(err || stderr) {
+            rejected(new HttpError(500))
+          } else {
+            if (download) {
+              res.set(makeDownloadHeader(fileIO.outputBase))
+              res.send(stdout)
+              fulfilled(true)
+            } else {
+              // response as buffer
+              res.set(jsonHeader)
+              res.json({stdout})
+              fulfilled(true)
             }
-            fs.writeFile(fileIO.input, resource.content, (err) => {
-                if(err) {
-                    console.log(fileIO)
-                    fileIO.cleanup()
-                    rejected(new HttpError(500))
-                } else {
-                    fulfilled(fileIO)
-                }
-            })
+          }
         })
-    },
+      })
+    }
+  },
 
-    // exec compile
-    execCompile: (format, options) => {
-        return (fileIO) => {
-            return new Promise((fulfilled, rejected) => {
-                // specify bytecode format requested
-                const mrbcx = (format.toString() === '2') ? mrbc[2] : mrbc[3]
-
-                // redundant options arguments
-                if(Array.isArray(options)) {
-                    options = options.join('')
-                }
-
-                const command = `${mrbcx} ${options} -o"${fileIO.output}" "${fileIO.input}"`
-                exec(command, (err, stdout, stderr) => {
-                    if(err) {
-                        console.log(err)
-
-                        fileIO.cleanup()
-                        rejected(new HttpError(500))
-
-                    } else if(stderr) {
-                        // maybe compile failed
-                        fileIO.cleanup()
-                        rejected(new HttpError(400, 'Compile Error'))
-
-                    } else {
-                        // maybe compile success
-                        fulfilled({fileIO})
-                    }
-                })
-            })
-        }
-    },
-
-    // do res.send
-    makeResponse: (download, res) => {
-        return ({fileIO}) => {
-            return new Promise((fulfilled, rejected) => {
-                exec(`cat ${fileIO.output}`, (err, stdout, stderr) => {
-                    if(err || stderr) {
-                        rejected(new HttpError(500))
-                    } else {
-                        if (download) {
-                            res.set(makeDownloadHeader(fileIO.outputBase))
-                            res.send(stdout)
-                            fulfilled(true)
-                        } else {
-                            // response as buffer
-                            res.set(jsonHeader)
-                            res.json({stdout})
-                            fulfilled(true)
-                        }
-                    }
-                })
-            })
-        }
-    },
-
-    // do res.send in case erro occured
-    makeErrorResponse: (res) => {
-        return (err) => {
-            return new Promise((fulfilled) => {
-                res.set(jsonHeader)// TODO: set Status Code. Also in test
-                res.json({
-                    code: err.code,
-                    name: err.name,
-                    message: err.message
-                })
-                // after all
-                err.callback
-                    && (typeof err.callback === 'function')
-                    && err.callback()
-                fulfilled()
-            })
-        }
-    },
+  // do res.send in case erro occured
+  makeErrorResponse: (res) => {
+    return (err) => {
+      return new Promise((fulfilled) => {
+        res.set(jsonHeader)// TODO: set Status Code. Also in test
+        res.json({
+          code: err.code,
+          name: err.name,
+          message: err.message
+        })
+        // after all
+        err.callback
+          && (typeof err.callback === 'function')
+          && err.callback()
+        fulfilled()
+      })
+    }
+  },
 }
 
 
